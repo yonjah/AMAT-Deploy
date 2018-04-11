@@ -1,0 +1,6 @@
+{
+  "esxi_host": "##ESXi IP##",
+  "esxi_datastore": "ESXi Data Store##",
+  "esxi_username": "ESXi Root##",
+  "esxi_password": "##ESXi Password##"
+}

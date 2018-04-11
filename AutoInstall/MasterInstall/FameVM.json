@@ -1,0 +1,78 @@
+{
+  "builders": [{
+    "name": "fame",
+    "vm_name": "fame",
+    "type": "vmware-iso",
+    "guest_os_type": "ubuntu-64",
+
+    "tools_upload_path": "/vmfs/volumes/5a52b220-262fa371-1806-90e2ba4d3224/packages/6.5.0/vmtools/linux.iso",
+    "vnc_disable_password": true,
+    "headless": false,
+    "disk_size": "1048576",
+    "iso_url": "http://au.releases.ubuntu.com/16.04/ubuntu-16.04.3-server-amd64.iso",
+    "iso_checksum": "a06cd926f5855d4f21fb4bc9978a35312f815fbda0d0ef7fdc846861f4fc4600",
+    "iso_checksum_type": "sha256",
+
+    "ssh_username": "fame",
+    "ssh_password": "fame",
+    "ssh_timeout": "15m",
+
+    "disk_type_id": "thin",
+
+    "floppy_files": [
+      "preseed/fame.cfg"
+    ],
+
+    "boot_command": [
+      "<enter><wait><f6><esc><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "/install/vmlinuz noapic ",
+      "preseed/file=/floppy/fame.cfg ",
+      "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+      "hostname={{.Name}} ",
+      "fb=false debconf/frontend=noninteractive ",
+      "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA ",
+      "keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+      "grub-installer/bootdev=/dev/sda ",
+      "initrd=/install/initrd.gz -- <enter>"
+    ],
+
+    "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'fame'|sudo -S sh 'shutdown.sh'",
+
+    "remote_type": "esx6.5",
+    "remote_host": "{{user `esxi_host`}}",
+    "remote_datastore": "{{user `esxi_datastore`}}",
+    "remote_username": "{{user `esxi_username`}}",
+    "remote_password": "{{user `esxi_password`}}",
+    "keep_registered": true,
+
+    "vmx_data": {
+    "ethernet0.networkName": "VM Network",
+    "memsize": "8196",
+    "numvcpus": "8"
+    }
+  }],
+
+  "provisioners": [
+   {
+     "type": "file",
+     "source": "scripts/Network.conf",
+     "destination": "/tmp/"
+     },
+    {
+     "type": "file",
+     "source": "~/AMAT-Deploy/FAME/Modules/",
+     "destination": "/home/fame"
+     },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/open-vm-tools.sh", "scripts/FAME_Install.sh"
+      ],
+
+      "execute_command": "echo 'fame' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
+    }
+  ]
+}
