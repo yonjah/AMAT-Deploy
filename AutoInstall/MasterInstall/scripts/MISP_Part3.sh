@@ -22,7 +22,7 @@ sudo cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/mi
 
 # Enable modules
 sudo a2ensite misp
-sudo a2enmod rewrite
+#sudo a2enmod rewrite
 
 # Restart apache
 sudo service apache2 reload

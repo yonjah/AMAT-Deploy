@@ -49,6 +49,6 @@ sudo sed -i '324i\        try:\n            CustomUploader(fname)\n            l
 source /tmp/Network.conf
 sudo sed -i -e "s;fame_ip;$fame_address;;;" /usr/local/lib/python2.7/dist-packages/thug/Logging/CustomUploader.py
 
-cd /opt/thug/
-sleep 1800    # Wait until all other systems are up and start URLs diagnostics
-sudo ./feedthug.sh
+#cd /opt/thug/
+#sleep 1800    # Wait until all other systems are up and start URLs diagnostics
+#sudo ./feedthug.sh

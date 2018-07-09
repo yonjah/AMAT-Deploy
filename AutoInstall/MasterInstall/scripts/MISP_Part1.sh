@@ -21,9 +21,6 @@ sudo postfix reload
 # Installing dependencies.
 sudo apt-get install -y -qq curl gcc git gnupg-agent make python openssl redis-server sudo vim zip
 
-# Stop mysql.
-sudo service mysql stop
-
 # Installing MariaDB has questions, automating the process.
 export DEBIAN_FRONTEND=noninteractive
 sudo debconf-set-selections <<< "mariadb-server mysql-server/root_password password misp"
@@ -31,7 +28,7 @@ sudo debconf-set-selections <<< "mariadb-server mysql-server/root_password_again
 sudo apt-get install -y -qq mariadb-client mariadb-server
 
 # Secure the install, use aptitude's expect to run the install unattended.
-sudo apt install -y -qq aptitude
+sudo apt-get install -y -qq aptitude
 sudo aptitude -y install expect
 SECURE_MYSQL=$(expect -c "
 set timeout 10
