@@ -72,11 +72,11 @@ function dependencies
 	 
 	#Installing Volatility
 	echo -e "\e[95m[+] Installing Volatility.... \e[0m" 
-	 pip install openpyxl >/dev/null 2>&1
-	 pip install ujson >/dev/null 2>&1
-	 pip install pycrypto >/dev/null 2>&1
-	 pip install distorm3 >/dev/null 2>&1
-	 pip install pytz >/dev/null 2>&1
+	 sudo pip install openpyxl >/dev/null 2>&1
+	 sudo pip install ujson >/dev/null 2>&1
+	 sudo pip install pycrypto >/dev/null 2>&1
+	 sudo pip install distorm3 >/dev/null 2>&1
+	 sudo pip install pytz >/dev/null 2>&1
 	 git clone https://github.com/volatilityfoundation/volatility.git >/dev/null 2>&1
 	 cd volatility >/dev/null 2>&1
 	 python setup.py build >/dev/null 2>&1
@@ -149,7 +149,12 @@ function cuckoo
 	sed -i "305s/if/elif/" ~/cuckoo-modified/modules/processing/network.py
 	sed -i "322s/^query[\"type\"] = \"SRV\"/else: \
 	query[\"type\"] = \"None\"/" ~/cuckoo-modified/modules/processing/network.py
+	
+	sed -i "11s/8000/8001/" ~/cuckoo-modified/lib/cuckoo/common/constants.py
+	sed -i "1178s/8000/8001/" ~/cuckoo-modified/analyzer/windows/analyzer.py
 
+	source /tmp/Network.conf
+	echo -e "address $cuck_address\n" | sudo sed -i "512s/192.168.56.121/$cuck_address/" ~/cuckoo-modified/utils/api.py
 
 
 	#installing requirements.txt
@@ -198,27 +203,24 @@ EOT
 
 
 
-function vmcloak #needs to be updated
+function vmcloak
 {
 	echo -e "\e[35m[+] Installing VMCloak.... \e[0m" 
 	mkdir ~/cuckoo-modified/VMCloak
 	mkdir ~/cuckoo-modified/VMCloak/ISOs
 	
+	sudo mv ~/InstallMultipleVMs.sh ~/cuckoo-modified/VMCloak
+	sudo mv ~/VMCloak_Dep_Install.sh ~/cuckoo-modified/VMCloak
+	sudo mv ~/VMCloak_Install.sh ~/cuckoo-modified/VMCloak
 
-	sudo apt install -y -qq virtualbox
-	sudo apt-get install -y -qq build-essential libssl-dev libffi-dev
-	sudo apt-get install -y -qq python-dev genisoimage
-	
-	sudo pip install -q vmcloak
-	sudo rm /usr/local/lib/python2.7/dist-packages/VMCloak-0.4.5a2-py2.7.egg/vmcloak/data/bootstrap/agent.py
-	sudo rm /usr/local/lib/python2.7/dist-packages/VMCloak-0.4.5a2-py2.7.egg/vmcloak/data/bootstrap/agent.py
+	sudo bash ~/cuckoo-modified/VMCloak/VMCloak_Dep_Install.sh
 
-	sudo rm /usr/local/lib/python2.7/dist-packages/VMCloak-0.4.5a2-py2.7.egg/vmcloak/data/bootstrap/agent.py
+	sudo bash ~/cuckoo-modified/VMCloak/InstallMultipleVMs.sh
+
+	sudo rm /usr/local/lib/python2.7/dist-packages/VMCloak-0.4.5-py2.7.egg/vmcloak/data/win10/autounattend.xml
+	sudo mv ~/autounattend.xml /usr/local/lib/python2.7/dist-packages/VMCloak-0.4.5-py2.7.egg/vmcloak/data/win10/
 
 
-	sudo cp ~/cuckoo-modified/agent/agent.py /usr/local/lib/python2.7/dist-packages/VMCloak-0.4.5a2-py2.7.egg/vmcloak/data/bootstrap/agent.py
-	
-	sudo mv ~/VMCloak_Install.sh home/cuckoo/cuckoo-modified/VMCloak
 	echo -e "\e[92m[\xE2\x9C\x94] VMCloak Install Complete! \e[0m" 
 }
 
@@ -249,11 +251,68 @@ function inetsim
 EOT
 	sudo chmod 744 ~/inetsim-1.2.7/inetsim >/dev/null 2>&1
 	sudo chmod 664 /etc/systemd/system/inetsim.service >/dev/null 2>&1
-	
 	sudo systemctl enable inetsim.service >/dev/null 2>&1
 	sudo systemctl start inetsim.service >/dev/null 2>&1
 
 	echo -e "\e[92m[\xE2\x9C\x94] Install complete!\e[0m" 
+}
+
+
+function cuckooService
+{
+
+	echo -e "\e[95m[+] Creating a Cuckoo service.... \e[0m" 
+	sudo cat <<EOT >> /etc/systemd/system/cuckoo.service
+
+    [Unit]
+    Description=Run cuckoo.py in the background as a Service
+
+    [Service]
+    Type=simple
+    WorkingDirectory=/home/cuckoo/cuckoo-modified/
+    ExecStart=/home/cuckoo/cuckoo-modified/cuckoo.py
+    TimeoutSec=infinity
+
+
+	[Install]
+    WantedBy=multi-user.target
+
+EOT
+	sudo chmod 744 ~/cuckoo-modified/cuckoo.py >/dev/null 2>&1
+	sudo chmod 664 /etc/systemd/system/cuckoo.service >/dev/null 2>&1
+	sudo systemctl enable cuckoo.service >/dev/null 2>&1
+	sudo systemctl start cuckoo.service >/dev/null 2>&1
+
+	echo -e "\e[92m[\xE2\x9C\x94] Service Configuration Complete!\e[0m" 
+}
+
+
+function cuckooAPIService
+{
+
+	echo -e "\e[95m[+] Creating a CuckooAPI service.... \e[0m" 
+	sudo cat <<EOT >> /etc/systemd/system/cuckooAPI.service
+
+	[Unit]
+	Description=Run API.py in the background as a Service
+
+	[Service]
+	Type=simple
+	WorkingDirectory=/home/cuckoo/cuckoo-modified/utils
+	ExecStart=/home/cuckoo/cuckoo-modified/utils/api.py
+	TimeoutSec=infinity
+	StandardOutput=tty
+	Restart=on-failure
+
+	[Install]
+	WantedBy=multi-user.target
+EOT
+	sudo chmod 744 ~/cuckoo-modified/utils/api.py >/dev/null 2>&1
+	sudo chmod 664 /etc/systemd/system/cuckooAPI.service >/dev/null 2>&1
+	sudo systemctl enable cuckooAPI.service >/dev/null 2>&1
+	sudo systemctl start cuckooAPI.service >/dev/null 2>&1
+
+	echo -e "\e[92m[\xE2\x9C\x94] Service Configuration Complete!\e[0m" 
 }
 
 
@@ -277,10 +336,12 @@ fi
 	bind_ip
 	echo -e '\e[93m    [+] 80% Complete... \e[0m'
 
-	#vmcloak
+	vmcloak
+	inetsim
 	echo -e '\e[93m    [+] 90% Complete! \e[0m'
 
-	inetsim
+	cuckooService
+	cuckooAPIService	
 	echo -e '\e[93m	   [+] 100% Complete! \e[0m'
 
 	
